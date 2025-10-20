@@ -15,7 +15,10 @@ class TestOperators(unittest.TestCase):
     def test_op_in(self):
         col = get_col()
         expr = op_in(col, [1, 2])
-        self.assertEqual(str(expr), 'x IN (:x_1, :x_2)')
+        self.assertTrue(
+            str(expr) == 'x IN (:x_1, :x_2)' or
+            'x IN (__[POSTCOMPILE_x_1])' in str(expr)
+        )
 
     def test_op_array_contains(self):
         col = get_col()

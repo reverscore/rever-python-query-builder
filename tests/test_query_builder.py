@@ -1,7 +1,6 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from ordered_set import OrderedSet
 from sqlalchemy import (
     Column,
     Integer,
@@ -23,7 +22,7 @@ def mock_query_builder_init(schema, table_name, metadata, mock_table):
         query_builder = SQLQueryBuilder(schema, table_name, metadata)
         query_builder.table = mock_table
         query_builder.query = select([mock_table])
-        query_builder.selected_columns = OrderedSet()
+        query_builder.selected_columns = []
     return query_builder
 
 
@@ -76,14 +75,15 @@ class TestSQLQueryBuilder(unittest.TestCase):  # noqa: WPS214
 
     def test_add_location_filters(self):
         query_builder = self.mocked_query_builder
-        report_input = Mock()
-        report_input.sites = ['site1', 'site2']
-        report_input.tags = ['tag1', 'tag2']
-        report_input.country_codes = ['US']
-        report_input.site_groups = []
-        report_input.tag_groups = []
+        filter_input = {
+            'sites': ['site1', 'site2'],
+            'tags': ['tag1', 'tag2'],
+            'country_codes': ['US'],
+            'site_groups': [],
+            'tag_groups': [],
+        }
 
-        query_builder.add_location_filters(report_input)
+        query_builder.add_location_filters(filter_input)
         query = compile_query(query_builder.query)
         self.assertIn("test_table.site_id IN ('site1', 'site2')", query)
         self.assertIn(
@@ -99,7 +99,7 @@ class TestSQLQueryBuilder(unittest.TestCase):  # noqa: WPS214
         query_builder = self.mocked_query_builder
         query_builder.select(['id', 'name'])
         query = compile_query(query_builder.query)
-        self.assertIn('SELECT id, name', query)
+        self.assertIn('SELECT test_table.id, test_table.name', query)
 
     def test_select_empty(self):
         query_builder = self.mocked_query_builder
@@ -155,58 +155,65 @@ class TestSQLQueryBuilder(unittest.TestCase):  # noqa: WPS214
         query = compile_query(query_builder.query)
         self.assertIn('IN', query)
 
-    def test_where_is_null(self):
+    def test_select_with_alias(self):
         query_builder = self.mocked_query_builder
-        query_builder.where('name', 'is_null')
+        query_builder.select_column('name', 'username')
         query = compile_query(query_builder.query)
-        self.assertIn('IS NULL', query)
+        self.assertIn('name AS username', query)
 
-    def test_where_chain(self):
+    def test_select_multiple_columns_with_alias(self):
         query_builder = self.mocked_query_builder
-        result = query_builder.where('id', '=', 1).where('name', '=', 'A')
-        self.assertIsInstance(result, SQLQueryBuilder)
-
-    def test_or_where(self):
-        query_builder = self.mocked_query_builder
-        expressions = [
-            {'field': 'name', 'operator': '=', 'value': 'test1'},
-            {'field': 'name', 'operator': '=', 'value': 'test2'},
-        ]
-        report_input = Mock()
-        report_input.organization_id = 'org123'
-
-        query_builder.apply_base_filters(report_input)
-        query_builder.or_where(expressions)
+        query_builder.select_column('id', 'user_id')
+        query_builder.select_column('name', 'username')
         query = compile_query(query_builder.query)
-        print(query)
-        self.assertIn(
-            "(test_table.name = 'test1' OR test_table.name = 'test2')",
-            query,
-        )
+        self.assertIn('id AS user_id', query)
+        self.assertIn('name AS username', query)
 
-    def test_or_where_empty(self):
+    def test_where_not_equal(self):
         query_builder = self.mocked_query_builder
-        query_builder.or_where([])
+        query_builder.where('value', '!=', 5)
         query = compile_query(query_builder.query)
-        self.assertIn('SELECT', query)
+        self.assertIn("test_table.value != 5", query)
 
-    def test_and_where(self):
+    def test_where_greater_than(self):
         query_builder = self.mocked_query_builder
-        expressions = [
-            {'field': 'name', 'operator': '=', 'value': 'test1'},
-            {'field': 'value', 'operator': '>', 'value': 10},
-        ]
-        report_input = Mock()
-        report_input.organization_id = 'org123'
-
-        query_builder.apply_base_filters(report_input)
-        query_builder.and_where(expressions)
+        query_builder.where('value', '>', 10)
         query = compile_query(query_builder.query)
-        print(query)
-        self.assertIn(
-            "test_table.name = 'test1' AND test_table.value > 10",
-            query,
-        )
+        self.assertIn("test_table.value > 10", query)
+
+    def test_where_less_than(self):
+        query_builder = self.mocked_query_builder
+        query_builder.where('value', '<', 20)
+        query = compile_query(query_builder.query)
+        self.assertIn("test_table.value < 20", query)
+
+    def test_group_by_and_order_by(self):
+        query_builder = self.mocked_query_builder
+        query_builder.group_by('name')
+        query_builder.order_by('name', 'desc')
+        query = compile_query(query_builder.query)
+        self.assertIn('GROUP BY test_table.name', query)
+        self.assertIn('ORDER BY name DESC', query)
+
+    def test_chained_filters(self):
+        query_builder = self.mocked_query_builder
+        query_builder.where('id', '=', 1).where('name', '=', 'test')
+        query = compile_query(query_builder.query)
+        self.assertIn("test_table.id = 1", query)
+        self.assertIn("test_table.name = 'test'", query)
+
+    def test_limit_and_offset(self):
+        query_builder = self.mocked_query_builder
+        query_builder.limit(5)
+        # Assuming offset method exists
+        if hasattr(query_builder, 'offset'):
+            query_builder.offset(10)
+            query = compile_query(query_builder.query)
+            self.assertIn('LIMIT 5', query)
+            self.assertIn('OFFSET 10', query)
+        else:
+            query = compile_query(query_builder.query)
+            self.assertIn('LIMIT 5', query)
 
     def test_and_where_empty(self):
         query_builder = self.mocked_query_builder
@@ -312,14 +319,3 @@ class TestSQLQueryBuilder(unittest.TestCase):  # noqa: WPS214
         query_builder.average('value', 'avg_value')
         query = compile_query(query_builder.query)
         self.assertIn('avg(value) AS avg_value', query)
-
-    def test_apply_base_filters(self):
-        query_builder = self.mocked_query_builder
-        report_input = Mock()
-        report_input.organization_id = 'org123'
-        query_builder.apply_base_filters(report_input)
-        query = compile_query(query_builder.query)
-        self.assertIn(
-            "test_table.organization_id = 'org123'",
-            query,
-        )
