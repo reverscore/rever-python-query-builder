@@ -10,7 +10,7 @@ from sqlalchemy.sql.selectable import Select
 from sqlalchemy.sql.schema import Table as SQLATable
 
 from rever_python_query_builder.types import (
-    OrderDirection, BaseFilters,WhereOperators, Expression, LocationFilters
+    OrderDirection, BaseFilters, WhereOperators, Expression, LocationFilters
 )
 from rever_python_query_builder.operators import OPERATORS
 from rever_python_query_builder.constants import (
