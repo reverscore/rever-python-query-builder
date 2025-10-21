@@ -17,7 +17,7 @@ from rever_python_query_builder.constants import (
     common_supported_filters,
     order_mapping,
 )
-
+from rever_python_query_builder.util import get_value
 
 class SQLQueryBuilder:
 
@@ -198,7 +198,7 @@ class SQLQueryBuilder:
         self,
         filters: BaseFilters,
     ) -> 'SQLQueryBuilder':
-        organization_id = filters.get('organization_id')
+        organization_id = get_value(filters, 'organization_id')
         self.where('organization_id', '=', organization_id)
         return self
 
@@ -237,16 +237,16 @@ class SQLQueryBuilder:
         filters: LocationFilters,
         supported_filters: set[str] = common_supported_filters,
     ) -> 'SQLQueryBuilder':
-        if filters['sites'] and 'site_id' in supported_filters:
+        if get_value(filters, 'sites') and 'site_id' in supported_filters:
             self.where('site_id', 'in', filters['sites'])
-        if filters['sites'] and 'site_ids' in supported_filters:
+        if get_value(filters, 'sites') and 'site_ids' in supported_filters:
             self.add_arrays_filter('site_ids', filters['sites'])
-        if filters['tags'] and 'tag_ids' in supported_filters:
+        if get_value(filters, 'tags') and 'tag_ids' in supported_filters:
             self.add_arrays_filter('tag_ids', filters['tags'])
-        if filters['country_codes'] and 'country_codes' in supported_filters:
+        if get_value(filters, 'country_codes') and 'country_codes' in supported_filters:
             self.add_arrays_filter('country_codes', filters['country_codes'])
-        if filters['site_groups'] and 'site_group_ids' in supported_filters:
+        if get_value(filters, 'site_groups') and 'site_group_ids' in supported_filters:
             self.add_arrays_filter('site_group_ids', filters['site_groups'])
-        if filters['tag_groups'] and 'tag_group_ids' in supported_filters:
+        if get_value(filters, 'tag_groups') and 'tag_group_ids' in supported_filters:
             self.add_arrays_filter('tag_group_ids', filters['tag_groups'])
         return self
