@@ -17,6 +17,10 @@ WhereOperators = Literal[
 ]
 
 
+class BaseFilters(TypedDict):
+    organization_id: str
+
+
 class Expression(TypedDict):
     field: str
     operator: str

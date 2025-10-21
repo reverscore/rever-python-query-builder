@@ -10,7 +10,7 @@ from sqlalchemy.sql.selectable import Select
 from sqlalchemy.sql.schema import Table as SQLATable
 
 from rever_python_query_builder.types import (
-    OrderDirection, WhereOperators, Expression, LocationFilters
+    OrderDirection, BaseFilters,WhereOperators, Expression, LocationFilters
 )
 from rever_python_query_builder.operators import OPERATORS
 from rever_python_query_builder.constants import (
@@ -196,8 +196,9 @@ class SQLQueryBuilder:
 
     def apply_base_filters(
         self,
-        organization_id: str,
+        filters: BaseFilters,
     ) -> 'SQLQueryBuilder':
+        organization_id = filters.get('organization_id')
         self.where('organization_id', '=', organization_id)
         return self
 

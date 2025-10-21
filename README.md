@@ -40,7 +40,7 @@ from rever_python_query_builder.query_builder import SQLQueryBuilder
 from sqlalchemy import create_engine
 
 engine = create_engine('postgresql://user:password@localhost/dbname')
-qb = QueryBuilder(schema='public', table_name='my_table', engine=engine)
+qb = SQLQueryBuilder(schema='public', table_name='my_table', engine=engine)
 qb.select(['id', 'name']).where('id', '=', 1)
 print(str(qb.query))
 ```

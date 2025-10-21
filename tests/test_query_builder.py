@@ -319,3 +319,9 @@ class TestSQLQueryBuilder(unittest.TestCase):  # noqa: WPS214
         query_builder.average('value', 'avg_value')
         query = compile_query(query_builder.query)
         self.assertIn('avg(value) AS avg_value', query)
+
+    def test_apply_base_filters(self):
+        query_builder = self.mocked_query_builder
+        query_builder.apply_base_filters({'organization_id': 'org123'})
+        query = compile_query(query_builder.query)
+        self.assertIn("test_table.organization_id = 'org123'", query)
