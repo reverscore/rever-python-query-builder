@@ -19,6 +19,7 @@ from rever_python_query_builder.constants import (
 )
 from rever_python_query_builder.util import get_value
 
+
 class SQLQueryBuilder:
 
     operators = OPERATORS
@@ -117,17 +118,18 @@ class SQLQueryBuilder:
         if 'field' in expression:
             condition_func = self.operators[expression.get('operator')]
             column = self.table.c[expression.get('field')]
-            return condition_func(column, expression.get('value'))
+            value = get_value(expression, 'value')
+            return condition_func(column, value)
 
         if 'expressions' in expression:
             sub_conditions = [
                 self._build_expression(sub_cond)
-                for sub_cond in expression.get('expressions')
+                for sub_cond in get_value(expression, 'expressions')
             ]
             condition_func = {
                 'and-expression': and_,
                 'or-expression': or_,
-            }[expression.get('operator')]
+            }[get_value(expression, 'operator')]
             return condition_func(*sub_conditions)
 
     def order_by(
@@ -238,15 +240,33 @@ class SQLQueryBuilder:
         supported_filters: set[str] = common_supported_filters,
     ) -> 'SQLQueryBuilder':
         if get_value(filters, 'sites') and 'site_id' in supported_filters:
-            self.where('site_id', 'in', filters['sites'])
+            self.where('site_id', 'in', get_value(filters, 'sites'))
         if get_value(filters, 'sites') and 'site_ids' in supported_filters:
-            self.add_arrays_filter('site_ids', filters['sites'])
+            self.add_arrays_filter('site_ids', get_value(filters, 'sites'))
         if get_value(filters, 'tags') and 'tag_ids' in supported_filters:
-            self.add_arrays_filter('tag_ids', filters['tags'])
-        if get_value(filters, 'country_codes') and 'country_codes' in supported_filters:
-            self.add_arrays_filter('country_codes', filters['country_codes'])
-        if get_value(filters, 'site_groups') and 'site_group_ids' in supported_filters:
-            self.add_arrays_filter('site_group_ids', filters['site_groups'])
-        if get_value(filters, 'tag_groups') and 'tag_group_ids' in supported_filters:
-            self.add_arrays_filter('tag_group_ids', filters['tag_groups'])
+            self.add_arrays_filter('tag_ids', get_value(filters, 'tags'))
+        if (
+            get_value(filters, 'country_codes')
+            and 'country_codes' in supported_filters
+        ):
+            self.add_arrays_filter(
+                'country_codes',
+                get_value(filters, 'country_codes')
+            )
+        if (
+            get_value(filters, 'site_groups')
+            and 'site_group_ids' in supported_filters
+        ):
+            self.add_arrays_filter(
+                'site_group_ids',
+                get_value(filters, 'site_groups')
+            )
+        if (
+            get_value(filters, 'tag_groups')
+            and 'tag_group_ids' in supported_filters
+        ):
+            self.add_arrays_filter(
+                'tag_group_ids',
+                get_value(filters, 'tag_groups')
+            )
         return self
